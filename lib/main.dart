@@ -23,12 +23,12 @@ class TracingScreen extends StatefulWidget {
 }
 
 class _TracingScreenState extends State<TracingScreen> {
-  List<Offset> userPoints = [];
+  List<List<Offset>> allUserPoints = []; // Store all strokes separately
+  List<Offset> currentStroke = []; // Store points of the current stroke
   bool stroke1Complete = false;
   bool stroke2Complete = false;
   bool isComplete = false;
 
-  // Define points for strokes of "ㄱ"
   final List<Offset> stroke1Points = [
     const Offset(100, 100),
     const Offset(100, 300)
@@ -39,7 +39,6 @@ class _TracingScreenState extends State<TracingScreen> {
   ];
   final double tolerance = 20.0;
 
-  // Track if user has passed the start and is moving toward the end
   bool isStroke1InProgress = false;
   bool isStroke2InProgress = false;
 
@@ -51,14 +50,11 @@ class _TracingScreenState extends State<TracingScreen> {
 
   // Detect if strokes are correctly traced
   void _checkStrokeCompletion(Offset point) {
-    // Stroke 1: only complete when the user touches both start and end sequentially
     if (!stroke1Complete && !isStroke1InProgress) {
-      // Detect if user is near the start of stroke 1
       if ((point - stroke1Points[0]).distance < tolerance) {
-        isStroke1InProgress = true; // Stroke 1 has started
+        isStroke1InProgress = true;
       }
     } else if (!stroke1Complete && isStroke1InProgress) {
-      // Detect if user reaches the end of stroke 1
       if ((point - stroke1Points[1]).distance < tolerance) {
         setState(() {
           stroke1Complete = true;
@@ -67,10 +63,9 @@ class _TracingScreenState extends State<TracingScreen> {
       }
     }
 
-    // Stroke 2: only complete when stroke 1 is done and the user follows the correct path
     if (stroke1Complete && !stroke2Complete && !isStroke2InProgress) {
       if ((point - stroke2Points[0]).distance < tolerance) {
-        isStroke2InProgress = true; // Stroke 2 has started
+        isStroke2InProgress = true;
       }
     } else if (stroke1Complete && isStroke2InProgress) {
       if ((point - stroke2Points[1]).distance < tolerance) {
@@ -83,7 +78,7 @@ class _TracingScreenState extends State<TracingScreen> {
     }
 
     setState(() {
-      userPoints.add(point); // Add user touch point in real-time
+      currentStroke.add(point); // Add points to the current stroke
     });
   }
 
@@ -92,7 +87,6 @@ class _TracingScreenState extends State<TracingScreen> {
       setState(() {
         isComplete = true;
       });
-      // Delay the success modal by 500ms to allow the final stroke to be filled
       Future.delayed(const Duration(milliseconds: 500), () {
         _showSuccessModal();
       });
@@ -109,7 +103,8 @@ class _TracingScreenState extends State<TracingScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                userPoints.clear();
+                allUserPoints.clear();
+                currentStroke.clear();
                 stroke1Complete = false;
                 stroke2Complete = false;
                 isComplete = false;
@@ -131,8 +126,17 @@ class _TracingScreenState extends State<TracingScreen> {
         onPanUpdate: (details) {
           _checkStrokeCompletion(details.localPosition);
         },
+        onPanEnd: (details) {
+          // When the user lifts their finger, save the current stroke and reset it
+          setState(() {
+            allUserPoints
+                .add(List.from(currentStroke)); // Save the current stroke
+            currentStroke.clear(); // Clear current stroke for next one
+          });
+        },
         child: CustomPaint(
-          painter: TracingPainter(userPoints, stroke1Complete, stroke2Complete),
+          painter: TracingPainter(
+              allUserPoints, currentStroke, stroke1Complete, stroke2Complete),
           child: const SizedBox(
             height: double.infinity,
             width: double.infinity,
@@ -144,22 +148,24 @@ class _TracingScreenState extends State<TracingScreen> {
 }
 
 class TracingPainter extends CustomPainter {
-  final List<Offset> points;
+  final List<List<Offset>> allPoints;
+  final List<Offset> currentStroke;
   final bool stroke1Complete;
   final bool stroke2Complete;
 
-  TracingPainter(this.points, this.stroke1Complete, this.stroke2Complete);
+  TracingPainter(this.allPoints, this.currentStroke, this.stroke1Complete,
+      this.stroke2Complete);
 
   @override
   void paint(Canvas canvas, Size size) {
     Paint strokePaint = Paint()
       ..color = Colors.grey
-      ..strokeWidth = 10.0
+      ..strokeWidth = 25.0
       ..style = PaintingStyle.stroke;
 
     Paint completePaint = Paint()
-      ..color = Colors.green
-      ..strokeWidth = 10.0
+      ..color = Colors.blue
+      ..strokeWidth = 20.0
       ..style = PaintingStyle.stroke;
 
     Paint tracePaint = Paint()
@@ -193,10 +199,17 @@ class TracingPainter extends CustomPainter {
           const Offset(100, 300), const Offset(300, 300), completePaint);
     }
 
-    // Draw user's tracing in real-time
-    if (points.isNotEmpty) {
-      for (int i = 0; i < points.length - 1; i++) {
-        canvas.drawLine(points[i], points[i + 1], tracePaint);
+    // Draw previous user strokes
+    for (var stroke in allPoints) {
+      for (int i = 0; i < stroke.length - 1; i++) {
+        canvas.drawLine(stroke[i], stroke[i + 1], tracePaint);
+      }
+    }
+
+    // Draw current stroke in real-time
+    if (currentStroke.isNotEmpty) {
+      for (int i = 0; i < currentStroke.length - 1; i++) {
+        canvas.drawLine(currentStroke[i], currentStroke[i + 1], tracePaint);
       }
     }
   }
@@ -215,9 +228,6 @@ class TracingPainter extends CustomPainter {
       end.dx - arrowSize * cos(angle + 3.14 / 6),
       end.dy - arrowSize * sin(angle + 3.14 / 6),
     );
-
-    canvas.drawLine(end, arrowTip1, paint);
-    canvas.drawLine(end, arrowTip2, paint);
   }
 
   @override
