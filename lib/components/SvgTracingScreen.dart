@@ -117,12 +117,18 @@ class _SvgTracingScreenState extends State<SvgTracingScreen> {
           });
         },
         child: Stack(
-          alignment: Alignment.center,
           children: [
             SvgPicture.asset(
-              'assets/icons/svg/remove-a1.svg',
-              color: Colors.grey,
-              fit: BoxFit.contain,
+              'assets/icons/svg/a-out.svg',
+              color: Colors.black,
+            ),
+            SvgPicture.asset(
+              'assets/icons/svg/a-in.svg',
+              color: Colors.white,
+            ),
+            SvgPicture.asset(
+              'assets/icons/svg/a-guide.svg',
+              color: Colors.black,
             ),
             CustomPaint(
               painter: SvgTracingPainter(

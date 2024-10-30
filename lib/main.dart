@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_tracing_sample/components/PaintInsideSvg.dart';
 import 'package:flutter_tracing_sample/components/SvgTracingScreen.dart';
+import 'package:flutter_tracing_sample/components/SvgTracingScreenLayer.dart';
 
 void main() => runApp(const TracingApp());
 
@@ -14,10 +15,10 @@ class TracingApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text("SVG 내 색칠하기"),
+          title: const Text("Alphabet Tracing"),
         ),
         backgroundColor: Colors.white, // 배경색을 하얀색으로 설정
-        body: const SvgTracingScreen(),
+        body: const SvgTracingScreenLayer(),
       ),
     );
   }
