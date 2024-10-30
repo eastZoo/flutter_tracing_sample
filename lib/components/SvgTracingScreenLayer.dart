@@ -14,7 +14,7 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
   bool path1Complete = false;
   bool path2Complete = false;
   bool isComplete = false;
-  double strokeWidth = 10.0; // 펜의 기본 굵기
+  double strokeWidth = 20.0; // 펜의 기본 굵기
 
   final List<Offset> path1Points = [
     const Offset(310, 220),
@@ -120,15 +120,15 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
         child: Stack(
           children: [
             SvgPicture.asset(
-              'assets/icons/svg/a/a-out.svg',
+              'assets/icons/svg/a-out.svg',
               color: Colors.black,
             ),
             SvgPicture.asset(
-              'assets/icons/svg/a/a-in.svg',
+              'assets/icons/svg/a-in.svg',
               color: isComplete ? Colors.green : Colors.white,
             ),
             SvgPicture.asset(
-              'assets/icons/svg/a/a-guide.svg',
+              'assets/icons/svg/a-guide.svg',
               color: Colors.black,
             ),
             CustomPaint(
