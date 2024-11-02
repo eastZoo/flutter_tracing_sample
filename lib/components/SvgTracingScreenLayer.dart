@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // rootBundle을 사용하기 위해 추가
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SvgTracingScreenLayer extends StatefulWidget {
@@ -11,65 +14,104 @@ class SvgTracingScreenLayer extends StatefulWidget {
 class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
   List<List<Offset>> allStrokes = []; // 모든 독립적인 선을 저장
   List<Offset> currentStroke = [];
-  bool path1Complete = false;
-  bool path2Complete = false;
   bool isComplete = false;
   double strokeWidth = 20.0; // 펜의 기본 굵기
 
-  final List<Offset> path1Points = [
-    const Offset(310, 220),
-    const Offset(170, 175),
-    const Offset(50, 325),
-    const Offset(170, 450),
-    const Offset(310, 410),
-  ];
+  // 클래스 변수로 추가
+  Map<int, Color> strokeColors = {};
 
-  final List<Offset> path2Points = [
-    const Offset(320, 220),
-    const Offset(320, 420),
-  ];
+  Map<int, List<Offset>> pathPoints = {}; // 획 번호별 포인트
+  Map<int, int> pathIndices = {}; // 획 번호별 현재 인덱스
+  Map<int, bool> pathComplete = {}; // 획 번호별 완료 여부
+  List<int> strokeOrder = []; // 획 번호 순서
+  int currentPathNumber = 0; // 현재 진행 중인 획 번호
 
   final double tolerance = 20.0;
-  int path1Index = 0; // 현재 path1에서 도달해야 하는 점 인덱스
-  int path2Index = 0; // 현재 path2에서 도달해야 하는 점 인덱스
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStrokeData();
+  }
+
+  // strokes.json 파일 불러오기 및 파싱
+  Future<void> _loadStrokeData() async {
+    String data = await rootBundle.loadString('assets/strokes.json');
+    Map<String, dynamic> jsonData = json.decode(data);
+
+    jsonData.forEach((key, value) {
+      int strokeNumber = int.parse(key);
+      List<Offset> points = [];
+      for (var point in value) {
+        points.add(Offset(
+          point['x'].toDouble() / 4 + 25,
+          point['y'].toDouble() / 4 + 150,
+        ));
+      }
+
+      print("points: $points");
+      pathPoints[strokeNumber] = points;
+      pathIndices[strokeNumber] = 0;
+      pathComplete[strokeNumber] = false;
+      strokeOrder.add(strokeNumber);
+
+      // 랜덤 색상 생성 및 저장
+      strokeColors[strokeNumber] = _generateRandomColor();
+    });
+
+    // 획 번호 순서대로 정렬
+    strokeOrder.sort();
+
+    setState(() {
+      currentPathNumber = strokeOrder.first;
+    });
+  }
+
+// 랜덤 색상 생성 함수 추가
+  Color _generateRandomColor() {
+    Random random = Random();
+    return Color.fromARGB(
+      255,
+      random.nextInt(256),
+      random.nextInt(256),
+      random.nextInt(256),
+    );
+  }
 
   bool _isNearPoint(Offset target, Offset point) {
     return (point - target).distance < tolerance;
   }
 
   void _checkPathCompletion(Offset point) {
-    // path1 경로 점 순서대로 체크
-    if (!path1Complete) {
-      if (_isNearPoint(path1Points[path1Index], point)) {
-        setState(() {
-          path1Index++;
-          if (path1Index >= path1Points.length) {
-            path1Complete = true;
-            path1Index = 0;
-          }
-        });
-      }
-    }
+    if (currentPathNumber == 0) return;
 
-    // path2 경로 점 순서대로 체크
-    if (path1Complete && !path2Complete) {
-      if (_isNearPoint(path2Points[path2Index], point)) {
+    if (!pathComplete[currentPathNumber]!) {
+      int currentIndex = pathIndices[currentPathNumber]!;
+      List<Offset> points = pathPoints[currentPathNumber]!;
+
+      if (_isNearPoint(points[currentIndex], point)) {
         setState(() {
-          path2Index++;
-          if (path2Index >= path2Points.length) {
-            path2Complete = true;
-            path2Index = 0;
-            _checkCompletion();
+          pathIndices[currentPathNumber] = currentIndex + 1;
+          if (pathIndices[currentPathNumber]! >= points.length) {
+            pathComplete[currentPathNumber] = true;
+            _moveToNextPath();
           }
         });
       }
     }
   }
 
-  void _checkCompletion() {
-    if (path1Complete && path2Complete) {
+  void _moveToNextPath() {
+    int currentIndex = strokeOrder.indexOf(currentPathNumber);
+    if (currentIndex + 1 < strokeOrder.length) {
+      setState(() {
+        currentPathNumber = strokeOrder[currentIndex + 1];
+      });
+    } else {
+      // 모든 획 완료
       setState(() {
         isComplete = true;
+        currentPathNumber = 0;
       });
       Future.delayed(const Duration(milliseconds: 500), () {
         _showSuccessModal();
@@ -88,9 +130,10 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
             onPressed: () {
               setState(() {
                 allStrokes.clear();
-                path1Complete = false;
-                path2Complete = false;
+                pathIndices.updateAll((key, value) => 0);
+                pathComplete.updateAll((key, value) => false);
                 isComplete = false;
+                currentPathNumber = strokeOrder.first;
               });
               Navigator.of(context).pop();
             },
@@ -103,6 +146,13 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (pathPoints.isEmpty) {
+      // strokes.json 파일이 로드될 때까지 로딩 화면 표시
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       body: GestureDetector(
         onPanUpdate: (details) {
@@ -141,27 +191,12 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
               painter: SvgTracingPainter(
                 allStrokes,
                 currentStroke,
-                path1Points,
-                path2Points, strokeWidth, // 펜의 굵기 전달
+                pathPoints,
+                strokeWidth, // 펜의 굵기 전달
+                strokeColors, // 추가
               ),
-              child: const SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-              ),
+              child: const SizedBox.expand(),
             ),
-            // 굵기 조절 슬라이더
-            // Slider(
-            //   value: strokeWidth,
-            //   min: 1.0,
-            //   max: 20.0,
-            //   divisions: 19,
-            //   label: strokeWidth.round().toString(),
-            //   onChanged: (value) {
-            //     setState(() {
-            //       strokeWidth = value;
-            //     });
-            //   },
-            // ),
           ],
         ),
       ),
@@ -172,16 +207,16 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
 class SvgTracingPainter extends CustomPainter {
   final List<List<Offset>> allStrokes;
   final List<Offset> currentStroke;
-  final List<Offset> path1Points;
-  final List<Offset> path2Points;
+  final Map<int, List<Offset>> pathPoints;
   final double strokeWidth; // 펜 굵기 변수
+  final Map<int, Color> strokeColors; // 추가
 
   SvgTracingPainter(
     this.allStrokes,
     this.currentStroke,
-    this.path1Points,
-    this.path2Points,
+    this.pathPoints,
     this.strokeWidth,
+    this.strokeColors, // 추가
   );
 
   @override
@@ -190,26 +225,24 @@ class SvgTracingPainter extends CustomPainter {
       ..color = Colors.blue.withOpacity(1)
       ..strokeWidth = strokeWidth // 동적으로 설정된 펜 굵기 사용
       ..strokeCap = StrokeCap.round // 선 끝을 둥글게 설정
-      ..style = PaintingStyle.fill;
+      ..style = PaintingStyle.stroke;
 
-    Paint point1Paint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 10.0
-      ..style = PaintingStyle.fill;
+    // Paint pointPaint = Paint()
+    //   ..color = Colors.red
+    //   ..strokeWidth = 10.0
+    //   ..style = PaintingStyle.fill;
 
-    Paint point2Paint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 10.0
-      ..style = PaintingStyle.fill;
+    // 각 획의 주요 점들을 그리기 (색상 적용)
+    pathPoints.forEach((strokeNumber, points) {
+      // 해당 획의 색상 가져오기
+      Paint pointPaint = Paint()
+        ..color = strokeColors[strokeNumber]! // 획별 랜덤 색상 사용
+        ..style = PaintingStyle.fill;
 
-    // 각 path의 주요 점들을 빨간 점으로 그리기
-    for (final point in path1Points) {
-      canvas.drawCircle(point, 5.0, point1Paint);
-    }
-    for (final point in path2Points) {
-      canvas.drawCircle(point, 5.0, point2Paint);
-    }
-
+      for (final point in points) {
+        canvas.drawCircle(point, 5.0, pointPaint);
+      }
+    });
     // 모든 이전 스트로크 그리기
     for (var stroke in allStrokes) {
       for (int i = 0; i < stroke.length - 1; i++) {
