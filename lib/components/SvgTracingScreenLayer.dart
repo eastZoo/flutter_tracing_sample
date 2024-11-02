@@ -119,17 +119,23 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
         },
         child: Stack(
           children: [
-            SvgPicture.asset(
-              'assets/icons/svg/a-out.svg',
+            SvgPicture.network(
+              'http://fileserver.eastzoo.xyz/files/tracing-app/f7772945-38a7-4a5b-8a34-4648df41c139.svg',
               color: Colors.black,
+              placeholderBuilder: (BuildContext context) =>
+                  const Center(child: CircularProgressIndicator()),
             ),
-            SvgPicture.asset(
-              'assets/icons/svg/a-in.svg',
+            SvgPicture.network(
+              'http://fileserver.eastzoo.xyz/files/tracing-app/42c58186-9c0f-44b9-a21c-e808ac0b800e.svg',
               color: isComplete ? Colors.green : Colors.white,
+              placeholderBuilder: (BuildContext context) =>
+                  const Center(child: CircularProgressIndicator()),
             ),
-            SvgPicture.asset(
-              'assets/icons/svg/a-guide.svg',
+            SvgPicture.network(
+              'http://fileserver.eastzoo.xyz/files/tracing-app/2dc2d1b3-8e03-4998-be08-530437267b27.svg',
               color: Colors.black,
+              placeholderBuilder: (BuildContext context) =>
+                  const Center(child: CircularProgressIndicator()),
             ),
             CustomPaint(
               painter: SvgTracingPainter(
