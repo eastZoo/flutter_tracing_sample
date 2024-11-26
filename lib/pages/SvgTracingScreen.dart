@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // rootBundle을 사용하기 위해 추가
 import 'package:flutter_svg/flutter_svg.dart';
 
-class SvgTracingScreenLayer extends StatefulWidget {
-  const SvgTracingScreenLayer({super.key});
+class SvgTracingScreen extends StatefulWidget {
+  const SvgTracingScreen({super.key});
 
   @override
-  _SvgTracingScreenLayerState createState() => _SvgTracingScreenLayerState();
+  _SvgTracingScreenState createState() => _SvgTracingScreenState();
 }
 
-class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
+class _SvgTracingScreenState extends State<SvgTracingScreen> {
   List<List<Offset>> allStrokes = []; // 모든 독립적인 선을 저장
   List<Offset> currentStroke = [];
   bool isComplete = false;
@@ -177,7 +177,7 @@ class _SvgTracingScreenLayerState extends State<SvgTracingScreenLayer> {
             ),
             SvgPicture.network(
               'http://fileserver.eastzoo.xyz/files/tracing-app/42c58186-9c0f-44b9-a21c-e808ac0b800e.svg',
-              color: isComplete ? Colors.green : Colors.white,
+              color: isComplete ? const Color(0xFFE95D54) : Colors.white,
               placeholderBuilder: (BuildContext context) =>
                   const Center(child: CircularProgressIndicator()),
             ),
@@ -222,7 +222,7 @@ class SvgTracingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint strokePaint = Paint()
-      ..color = Colors.blue.withOpacity(1)
+      ..color = Colors.red.withOpacity(1)
       ..strokeWidth = strokeWidth // 동적으로 설정된 펜 굵기 사용
       ..strokeCap = StrokeCap.round // 선 끝을 둥글게 설정
       ..style = PaintingStyle.stroke;
@@ -240,7 +240,7 @@ class SvgTracingPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
 
       for (final point in points) {
-        canvas.drawCircle(point, 5.0, pointPaint);
+        canvas.drawCircle(point, 4.0, pointPaint);
       }
     });
     // 모든 이전 스트로크 그리기
