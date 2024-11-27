@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // SystemChrome 사용을 위해 추가
-import 'package:flutter_tracing_sample/pages/PixelColoringGameScreen.dart';
-import 'package:flutter_tracing_sample/pages/SvgTracingScreen.dart';
-import 'package:flutter_tracing_sample/pages/DragAndDropGameScreen.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_tracing_sample/pages/MainCategoryScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text("Alphabet Tracing"),
-        ),
-        backgroundColor: Colors.white, // 배경색을 하얀색으로 설정
-        body: const PixelColoringGameScreen(),
-      ),
+      home: MainCategoryScreen(),
     );
   }
 }
