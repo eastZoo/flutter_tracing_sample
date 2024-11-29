@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tracing_sample/pages/BlockModelViewScreen.dart';
 
 class TabletUiScreen extends StatefulWidget {
   final String title;
@@ -149,9 +150,26 @@ class _TabletUiScreenState extends State<TabletUiScreen>
                   ),
                   itemCount: categoryItems[_selectedTabIndex]?.length ?? 0,
                   itemBuilder: (context, index) {
-                    return GridItem(
-                        title: categoryItems[_selectedTabIndex]![index],
-                        index: index + 1);
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BlockModelViewScreen(
+                              title: categoryItems[_selectedTabIndex]![index],
+                              modelPaths: const [
+                                // 예시 gltf 파일 경로들
+                                'https://example.com/model1.gltf',
+                                'https://example.com/model2.gltf',
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      child: GridItem(
+                          title: categoryItems[_selectedTabIndex]![index],
+                          index: index + 1),
+                    );
                   },
                 ),
               ),

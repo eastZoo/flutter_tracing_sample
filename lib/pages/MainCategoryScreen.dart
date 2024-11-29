@@ -18,10 +18,13 @@ class MainCategoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Grow Learning AI 학습',
-            style: TextStyle(color: Colors.black)),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        flexibleSpace: const Center(
+          child: Text('Grow Learning AI 학습',
+              style: TextStyle(color: Colors.black, fontSize: 25)),
+        ),
         actions: const [
           Padding(
             padding: EdgeInsets.all(8.0),
